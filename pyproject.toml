@@ -1,0 +1,28 @@
+[project]
+name = "ot"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "msgspec>=0.20.0",
+    "typer>=0.21.0",
+    "tzlocal>=5.3.1",
+]
+
+[project.scripts]
+ot = "ot.cli:app"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+extend-select = ["RUF", "LOG", "TRY"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
