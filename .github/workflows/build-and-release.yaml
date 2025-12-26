@@ -32,11 +32,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           draft: false
           prerelease: false
           make_latest: true
           files: |
-            "dist/*"
-            "README.md"
-            "LICENSE"
+            dist/*
+            README.md
+            LICENSE
