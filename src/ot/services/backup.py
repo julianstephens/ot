@@ -43,8 +43,14 @@ class BackupService:
         )
         for old_file in backup_files[self.max_backup_files :]:
             self.__logger.debug(f"removing old backup file: {old_file!s}")
-            old_file.unlink()
-            self.__logger.debug(f"removed old backup file: {old_file!s}")
+            try:
+                old_file.unlink()
+                self.__logger.debug(f"removed old backup file: {old_file!s}")
+            except FileNotFoundError:
+                # File may have been removed concurrently; log and continue.
+                self.__logger.debug(
+                    f"old backup file already missing during cleanup: {old_file!s}"
+                )
         self.__logger.debug("old backup files cleanup complete.")
 
     def create_backup(self) -> Path:
