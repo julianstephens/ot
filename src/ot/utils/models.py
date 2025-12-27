@@ -1,6 +1,7 @@
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 from datetime import datetime
 from enum import StrEnum
+from pathlib import Path
 
 import msgspec
 
@@ -29,6 +30,15 @@ class StrictModeRules(StrEnum):
     FORBID_MULTIPLE_STATUS_FLIPS_PER_DAY = "forbid_multiple_status_flips_per_day"
 
 
+class Remedy(StrEnum):
+    """Remediation codes for issues detected by the Doctor service."""
+
+    INIT_STORAGE = "init_storage"
+    FORCE_INIT_STORAGE = "force_init_storage"
+    LOAD_STATE = "load_state"
+    MIGRATE_STATE = "migrate_state"
+
+
 @dataclass
 class Day:
     title: str
@@ -44,6 +54,7 @@ class Settings:
     auto_prompt_on_empty: bool = True
     strict_mode: bool = True
     default_log_days: int = 7
+    max_backup_files: int = 5
 
 
 SETTINGS_FIELDS = [field.name for field in fields(Settings)]
@@ -52,8 +63,73 @@ SettingsKeys = StrEnum(
 )
 
 
+@dataclass
+class DoctorResult:
+    """Result of running the Doctor service."""
+
+    exit_code: int = 0
+    autofixed: list[str] = field(default_factory=list)
+    unresolved: list[str] = field(default_factory=list)
+    backup_path: Path | None = None
+    remedy: Remedy | None = None
+
+    @property
+    def has_issues(self) -> bool:
+        return bool(self.autofixed or self.unresolved)
+
+    def generate_report(self) -> str:
+        """Generate a textual report of the Doctor run.
+
+        Returns:
+            str: The report as a string.
+        """
+        lines: list[str] = []
+
+        # Header
+        lines.append("State file checked.")
+        lines.append("")
+
+        # Auto-fixes
+        if self.autofixed:
+            lines.append("Auto-fixed:")
+            lines.extend(f"- {item}" for item in self.autofixed)
+        else:
+            lines.append("No auto-fixes applied.")
+
+        lines.append("")
+
+        # Unresolved issues
+        if self.unresolved:
+            lines.append("Unresolved issues:")
+            lines.extend(f"- {item}" for item in self.unresolved)
+        else:
+            lines.append("No unresolved issues.")
+
+        lines.append("")
+
+        # Backup information
+        if self.backup_path:
+            lines.append("Backup created at:")
+            lines.append(str(self.backup_path))
+            lines.append("")
+
+        # Remedy / manual intervention
+        if self.remedy:
+            lines.append(
+                "Manual intervention required. No destructive changes applied. "
+                f"(Remediation code: {self.remedy.value})"
+            )
+        else:
+            lines.append("No manual intervention needed.")
+
+        lines.append("")
+        lines.append(f"Exit code: {self.exit_code}")
+
+        return "\n".join(lines)
+
+
 class State(msgspec.Struct):
-    timezone: str
-    days: dict[str, Day]
-    settings: Settings = Settings()
+    timezone: str | None = None
+    days: dict[str, Day] | None = None
     version: int = STATE_VERSION
+    settings: Settings | None = None

@@ -1,3 +1,7 @@
+## v0.1.2
+
+- Adds `ot doctor` to assist with diagnosing and fixing storage file issues
+
 ## v0.1.1
 
 - Renames global `--verbose` to `--debug`

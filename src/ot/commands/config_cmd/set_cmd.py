@@ -1,7 +1,7 @@
 from typing import Annotated
 
 import typer
-from rich.prompt import Confirm, Prompt
+from rich.prompt import Confirm, IntPrompt
 
 from ot.services import StorageService
 from ot.utils import (
@@ -17,13 +17,12 @@ from . import app
 
 def set_default_log_days(storage: StorageService) -> None:
     settings = storage.settings
-    default_days = Prompt.ask(
-        "Enter default number of days to show in log", default="7"
+    default_days = IntPrompt.ask(
+        "Enter default number of days to show in log", default=7
     )
-    days_int = int(default_days)
-    if days_int <= 0:
+    if default_days <= 0:
         raise ValueError
-    settings.default_log_days = days_int
+    settings.default_log_days = default_days
     storage.modify_settings(settings)
 
 
@@ -38,6 +37,15 @@ def set_strict_mode(storage: StorageService) -> None:
     settings = storage.settings
     strict_value = Confirm.ask("Enable strict mode?", default=settings.strict_mode)
     settings.strict_mode = strict_value
+    storage.modify_settings(settings)
+
+
+def set_max_backup_files(storage: StorageService) -> None:
+    settings = storage.settings
+    max_files = IntPrompt.ask("Enter maximum number of backup files to keep", default=5)
+    if max_files < 0:
+        raise ValueError
+    settings.max_backup_files = max_files
     storage.modify_settings(settings)
 
 
@@ -81,6 +89,21 @@ def set(
                 raise typer.Exit(code=1) from ex
             except Exception as ex:
                 print_error(f"Error setting strict_mode: {ex}")
+                raise typer.Exit(code=1) from ex
+        case "max_backup_files":
+            try:
+                set_max_backup_files(storage)
+            except ValueError:
+                print_error(
+                    "Please enter a valid non-negative integer for maximum "
+                    "backup files."
+                )
+                raise typer.Exit(code=1)
+            except StorageNotInitializedError as ex:
+                print_error("Storage is not initialized. Please run 'ot init' first.")
+                raise typer.Exit(code=1) from ex
+            except Exception as ex:
+                print_error(f"Error setting max_backup_files: {ex}")
                 raise typer.Exit(code=1) from ex
         case _:
             print_error(f"Setting '{key}' is not recognized.")

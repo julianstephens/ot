@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock
-
 import pytest
 from typer.testing import CliRunner
 
@@ -42,8 +40,8 @@ def test_log_with_days(mock_storage):
     assert mock_storage.days == {}
 
 
-def test_log_with_month(mock_storage):
-    mock_day = MagicMock()
+def test_log_with_month(mock_storage, mocker):
+    mock_day = mocker.MagicMock()
     mock_day.status = Status.DONE
     mock_day.title = "Test"
     mock_storage.get_month_days.return_value = {"2023-01-01": mock_day}

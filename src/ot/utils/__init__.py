@@ -10,6 +10,8 @@ from .cli import (
 from .constants import (
     CACHE_DIR,
     DATE_FORMAT,
+    DEFAULT_LOG_DAYS,
+    DEFAULT_MAX_BACKUP_FILES,
     MONTH_FORMAT,
     STATE_FILE,
     STATE_VERSION,
@@ -27,6 +29,8 @@ from .logger import Logger, get_logger
 from .models import (
     SETTINGS_FIELDS,
     Day,
+    DoctorResult,
+    Remedy,
     RichHelpPanel,
     Settings,
     SettingsKeys,
@@ -39,6 +43,8 @@ from .models import (
 __all__ = [
     "CACHE_DIR",
     "DATE_FORMAT",
+    "DEFAULT_LOG_DAYS",
+    "DEFAULT_MAX_BACKUP_FILES",
     "MONTH_FORMAT",
     "SETTINGS_FIELDS",
     "STATE_FILE",
@@ -47,8 +53,10 @@ __all__ = [
     "DayCollisionError",
     "DayDoneError",
     "DayUnsetError",
+    "DoctorResult",
     "InvalidDateStringError",
     "Logger",
+    "Remedy",
     "RichHelpPanel",
     "Settings",
     "SettingsKeys",

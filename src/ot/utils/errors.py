@@ -1,4 +1,4 @@
-from ot.utils.models import StrictModeRules
+from .models import StrictModeRules
 
 
 class StorageNotInitializedError(RuntimeError):

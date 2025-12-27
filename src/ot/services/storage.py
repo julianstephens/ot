@@ -18,19 +18,24 @@ from ot.utils import (
     DayDoneError,
     DayUnsetError,
     Logger,
+    Remedy,
     Settings,
     State,
     Status,
     StorageAlreadyInitializedError,
     StorageNotInitializedError,
+    StrictModeCompleteStatuses,
     StrictModeRules,
     StrictModeViolationError,
 )
-from ot.utils.models import StrictModeCompleteStatuses
+
+from .backup import BackupService
+from .doctor import DoctorService
 
 
 class StorageService:
     __lazy_load: bool
+    __backup_dir: Path
     __state_path: Path
     __state: State | None = None
     __state_loaded = False
@@ -38,6 +43,12 @@ class StorageService:
     def __init__(self, lazy_load: bool, log_level: int):
         self.__lazy_load = lazy_load
         self.__logger = Logger("ot::StorageService", level=log_level)
+        self.__backup_dir = CACHE_DIR / "backups"
+        self.__backup_svc = BackupService(
+            state_path=CACHE_DIR / STATE_FILE,
+            backup_dir=self.__backup_dir,
+            log_level=log_level,
+        )
         self.__state_path = CACHE_DIR / STATE_FILE
 
     def initialize(self, force: bool = False):
@@ -87,6 +98,7 @@ class StorageService:
             else:
                 raise StorageNotInitializedError
         assert self.__state is not None, StorageNotInitializedError
+        assert self.__state.days is not None
         return self.__state.days
 
     @property
@@ -97,6 +109,7 @@ class StorageService:
             else:
                 raise StorageNotInitializedError
         assert self.__state is not None, StorageNotInitializedError
+        assert self.__state.settings is not None
         return self.__state.settings
 
     @property
@@ -107,6 +120,7 @@ class StorageService:
             else:
                 raise StorageNotInitializedError
         assert self.__state is not None, StorageNotInitializedError
+        assert self.__state.timezone is not None
         return self.__state.timezone
 
     def _migrate_state(self):
@@ -120,6 +134,7 @@ class StorageService:
 
         self.__logger.debug("migrating state...")
         assert self.__state is not None, StorageNotInitializedError
+        assert self.__state.days is not None
 
         if self.__state.version < STATE_VERSION:
             self.__logger.debug(
@@ -128,11 +143,8 @@ class StorageService:
             )
             if self.__state.version == 1:
                 self.__logger.debug(f"migrating from version 1 to {STATE_VERSION}...")
-                self.__state.settings = (
-                    Settings()
-                    if not hasattr(self.__state, "settings")
-                    else self.__state.settings
-                )
+                if self.__state.settings is None:
+                    self.__state.settings = Settings()
                 for date, day in self.__state.days.items():
                     updated_day = Day(
                         title=day.title,
@@ -177,7 +189,9 @@ class StorageService:
         else:
             self.__logger.debug("no data found, initializing new state...")
             iana_timezone = get_localzone()
-            self.__state = State(timezone=str(iana_timezone), days={})
+            self.__state = State(
+                timezone=str(iana_timezone), days={}, settings=Settings()
+            )
             self.__logger.debug("new state initialized")
 
         self.__state_loaded = True
@@ -199,15 +213,29 @@ class StorageService:
             f.write(msgspec.json.encode(self.__state))
             self.__logger.debug("state saved to file")
 
-    def __enforce_strict_mode(
+    def enforce_strict_mode(
         self, date: str, action: Literal["add", "modify", "status"]
     ):
+        """Enforce strict mode rules based on the action.
+
+        Args:
+            date (str): The date in YYYY-MM-DD format.
+            action (Literal["add", "modify", "status"]): The action to enforce
+                strict mode rules for.
+
+        Raises:
+            StorageNotInitializedError: If the storage is not initialized.
+            StrictModeViolationError: If a strict mode rule is violated.
+        """
         if not self.ready:
             if self.__lazy_load:
                 self._load_state()
             else:
                 raise StorageNotInitializedError
         assert self.__state is not None, StorageNotInitializedError
+        assert self.__state.timezone is not None
+        assert self.__state.settings is not None
+        assert self.__state.days is not None
 
         now = datetime.now(tz=ZoneInfo(self.__state.timezone))
         if self.__state.settings.strict_mode:
@@ -259,6 +287,144 @@ class StorageService:
         else:
             self.__logger.debug("strict mode disabled, skipping validation")
 
+    def doctor(self) -> tuple[Remedy | None, str, int]:
+        """Run the storage doctor to diagnose and repair state file issues.
+
+        Returns:
+            tuple[Remedy | None, str, int]: A tuple containing the recommended remedy,
+                a report message, and the exit code.
+        """
+        self.__logger.debug("running storage doctor...")
+        doctor = DoctorService(
+            state_path=self.__state_path,
+            backup_dir=self.__backup_dir,
+            log_level=self.__logger.level,
+        )
+        result = doctor.run()
+
+        if result.exit_code == 3:
+            self.__logger.debug("state file missing, returning remedy to init storage")
+            return (
+                result.remedy,
+                """
+        No state file found.
+        Nothing to repair.
+        Run `ot init` to begin using ot.
+        """,
+                result.exit_code,
+            )
+
+        if result.exit_code == 2 and result.remedy == Remedy.FORCE_INIT_STORAGE:
+            self.__logger.debug(
+                "state file corrupted, returning remedy to force init storage..."
+            )
+            if self.__state and self.__state.settings:
+                self.__backup_svc.set_max_backup_files(
+                    self.__state.settings.max_backup_files
+                )
+            backup_path = self.__backup_svc.create_backup()
+            result.backup_path = backup_path
+
+            if backup_path:
+                msg = f"""
+            Corrupted state file detected.
+
+            A backup of the file was saved to:
+            {backup_path!s}
+
+            Run `ot init --force` to re-initialize the storage service.
+
+            Exit code: {result.exit_code}
+            """
+            else:
+                msg = f"""
+            Corrupted state file detected.
+
+            Could not create a backup of the corrupted file.
+
+            Run `ot init --force` to re-initialize the storage service.
+
+            Exit code: {result.exit_code}
+            """
+
+            return (
+                result.remedy,
+                msg,
+                result.exit_code,
+            )
+
+        if result.exit_code == 1 and result.remedy == Remedy.LOAD_STATE:
+            self.__logger.debug("state file issues detected, reloading state...")
+            self.__state_loaded = False
+            return (
+                result.remedy,
+                f"""
+            Empty state file detected.
+
+            A backup of the file was saved to:
+            {result.backup_path!s}
+
+            Created a fresh state file.
+            No existing data was found to recover.
+
+            Exit code: {result.exit_code}
+            """,
+                result.exit_code,
+            )
+        if result.exit_code == 1 and result.remedy == Remedy.MIGRATE_STATE:
+            self.__logger.debug("doctor requested state migration, migrating...")
+            try:
+                self._load_state()
+                result.autofixed.append(
+                    f"State file migrated to version {STATE_VERSION}."
+                )
+                result.unresolved = [
+                    msg for msg in result.unresolved if "migration needed" not in msg
+                ]
+                result.remedy = None
+            except Exception as ex:
+                result.unresolved.append(f"Migration failed: {ex}")
+                result.exit_code = 2
+
+            return (
+                result.remedy,
+                f"""
+            Outdated state file version detected.
+
+            State file migrated to version {STATE_VERSION}.
+
+            No existing data was lost.
+
+            Exit code: {result.exit_code}
+            """,
+                result.exit_code,
+            )
+
+        if result.has_issues:
+            self.__logger.debug("state file issues detected, returning report...")
+            return (
+                result.remedy,
+                result.generate_report(),
+                result.exit_code
+                if result.exit_code >= 2
+                else 2
+                if len(result.unresolved) > 0
+                else 1,
+            )
+
+        return (
+            None,
+            f"""
+        State file checked.
+
+        No problems found.
+        No changes made.
+
+        Exit code: {0}
+        """,
+            0,
+        )
+
     def add_day(self, data: Day, date: str | None = None, force: bool = False) -> Day:
         """Add a day data for a specific date.
 
@@ -283,12 +449,14 @@ class StorageService:
             else:
                 raise StorageNotInitializedError
         assert self.__state is not None, StorageNotInitializedError
+        assert self.__state.timezone is not None
+        assert self.__state.days is not None
 
         now = datetime.now(tz=ZoneInfo(self.__state.timezone))
         data.created_at = now
         date = now.strftime(DATE_FORMAT) if date is None else date
 
-        self.__enforce_strict_mode(date, action="add")
+        self.enforce_strict_mode(date, action="add")
 
         if date in self.__state.days and not force:
             raise DayCollisionError
@@ -318,6 +486,8 @@ class StorageService:
             else:
                 raise StorageNotInitializedError
         assert self.__state is not None, StorageNotInitializedError
+        assert self.__state.timezone is not None
+        assert self.__state.days is not None
 
         date = (
             datetime.now(tz=ZoneInfo(self.__state.timezone)).strftime(DATE_FORMAT)
@@ -325,7 +495,7 @@ class StorageService:
             else date
         )
 
-        self.__enforce_strict_mode(date, action="modify")
+        self.enforce_strict_mode(date, action="modify")
 
         self.__logger.debug(f"adding note to date: {date}")
         day = self.__state.days.get(date, None)
@@ -355,6 +525,8 @@ class StorageService:
             else:
                 raise StorageNotInitializedError
         assert self.__state is not None, StorageNotInitializedError
+        assert self.__state.timezone is not None
+        assert self.__state.days is not None
 
         self.__logger.debug(f"modifying day for date: {date if date else 'today'}")
         date = (
@@ -362,7 +534,7 @@ class StorageService:
             if date is None
             else date
         )
-        self.__enforce_strict_mode(date, action="modify")
+        self.enforce_strict_mode(date, action="modify")
         day = self.__state.days.get(date, None)
         if day is None:
             self.__logger.debug("no day set for this date, raising error")
@@ -411,6 +583,8 @@ class StorageService:
             else:
                 raise StorageNotInitializedError
         assert self.__state is not None, StorageNotInitializedError
+        assert self.__state.timezone is not None
+        assert self.__state.days is not None
         date = (
             datetime.now(tz=ZoneInfo(self.__state.timezone)).strftime(DATE_FORMAT)
             if date is None
@@ -444,13 +618,15 @@ class StorageService:
             else:
                 raise StorageNotInitializedError
         assert self.__state is not None, StorageNotInitializedError
+        assert self.__state.timezone is not None
+        assert self.__state.days is not None
         date = (
             datetime.now(tz=ZoneInfo(self.__state.timezone)).strftime(DATE_FORMAT)
             if date is None
             else date
         )
 
-        self.__enforce_strict_mode(date, action="status")
+        self.enforce_strict_mode(date, action="status")
 
         self.__logger.debug(f"marking day as done for date: {date}")
         day = self.__state.days.get(date, None)
@@ -489,6 +665,8 @@ class StorageService:
             else:
                 raise StorageNotInitializedError
         assert self.__state is not None, StorageNotInitializedError
+        assert self.__state.timezone is not None
+        assert self.__state.days is not None
 
         filtered_days = {}
 

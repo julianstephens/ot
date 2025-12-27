@@ -1,3 +1,4 @@
+from .doctor_cmd import doctor
 from .done_cmd import done
 from .edit_cmd import edit
 from .init_cmd import init
@@ -10,6 +11,7 @@ from .skip_cmd import skip
 from .today_cmd import today
 
 __all__ = [
+    "doctor",
     "done",
     "edit",
     "init",
