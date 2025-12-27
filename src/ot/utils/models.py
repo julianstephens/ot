@@ -73,29 +73,50 @@ class DoctorResult:
     def has_issues(self) -> bool:
         return bool(self.autofixed or self.unresolved)
 
-    def generate_report(self):
-        return f"""
-        State file checked.
+    def generate_report(self) -> str:
+        lines: list[str] = []
 
-        {"Auto-fixed:" if self.autofixed else "No auto-fixes applied."}
-        {'\n- '.join(self.autofixed) if self.autofixed else ''}
-        {"Unresolved issues:" if self.unresolved else "No unresolved issues."}
-        {'\n- '.join(self.unresolved) if self.unresolved else ''}
+        # Header
+        lines.append("State file checked.")
+        lines.append("")
 
-        {"Backup created at: " if self.backup_path else ""}
-        {f'{self.backup_path!s}' if self.backup_path else ""}
+        # Auto-fixes
+        if self.autofixed:
+            lines.append("Auto-fixed:")
+            lines.extend(f"- {item}" for item in self.autofixed)
+        else:
+            lines.append("No auto-fixes applied.")
 
-        {(
-            f"Manual intervention required. No destructive changes applied. "
-            f"(Remediation code: {self.remedy.value})"
-        )
-         if self.remedy
-         else "No manual intervention needed."}
+        lines.append("")
 
-        Exit code: {self.exit_code}
-        """
+        # Unresolved issues
+        if self.unresolved:
+            lines.append("Unresolved issues:")
+            lines.extend(f"- {item}" for item in self.unresolved)
+        else:
+            lines.append("No unresolved issues.")
 
+        lines.append("")
 
+        # Backup information
+        if self.backup_path:
+            lines.append("Backup created at:")
+            lines.append(str(self.backup_path))
+            lines.append("")
+
+        # Remedy / manual intervention
+        if self.remedy:
+            lines.append(
+                "Manual intervention required. No destructive changes applied. "
+                f"(Remediation code: {self.remedy.value})"
+            )
+        else:
+            lines.append("No manual intervention needed.")
+
+        lines.append("")
+        lines.append(f"Exit code: {self.exit_code}")
+
+        return "\n".join(lines)
 class State(msgspec.Struct):
     timezone: str | None = None
     days: dict[str, Day] | None = None
