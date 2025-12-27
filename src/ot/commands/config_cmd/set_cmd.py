@@ -1,7 +1,7 @@
 from typing import Annotated
 
 import typer
-from rich.prompt import Confirm, IntPrompt, Prompt
+from rich.prompt import Confirm, IntPrompt
 
 from ot.services import StorageService
 from ot.utils import (

@@ -53,18 +53,23 @@ class BackupService:
                 )
         self.__logger.debug("old backup files cleanup complete.")
 
-    def create_backup(self) -> Path:
+    def create_backup(self) -> Path | None:
         """Create a backup of the current state file.
 
         Returns:
-            Path: The path to the created backup file.
+            Path | None: The path to the created backup file, or None if backup failed.
         """
         self.__logger.debug("creating backup of state file...")
         backup_path = (
             self.backup_dir / f"state-{datetime.now().strftime('%Y%m%d%H%M%S')}.json"
         )
         self.backup_dir.mkdir(parents=True, exist_ok=True)
-        self.state_path.copy(backup_path)
+        try:
+            self.state_path.copy(backup_path)
+        except (FileNotFoundError, PermissionError, OSError) as e:
+            self.__logger.warning(f"failed to create backup: {e}")
+            return None
+
         self.cleanup_old_backups()
         self.__logger.debug(f"backup created at: {backup_path!s}")
         return backup_path

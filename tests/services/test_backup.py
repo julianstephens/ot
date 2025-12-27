@@ -85,3 +85,12 @@ def test_create_backup_triggers_cleanup(backup_service, mocker):
     backup_service.create_backup()
 
     spy.assert_called_once()
+
+
+def test_create_backup_missing_file(backup_service):
+    # Delete the state file
+    backup_service.state_path.unlink()
+
+    # This should return None and log a warning
+    result = backup_service.create_backup()
+    assert result is None

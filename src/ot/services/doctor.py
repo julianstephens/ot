@@ -325,7 +325,8 @@ class DoctorService:
                         f"leaving unchanged and marking as unresolved"
                     )
                     result.unresolved.append(
-                        f"Invalid status '{day.status}' for date '{date_str}', not auto-corrected"
+                        f"Invalid status '{day.status}' for date '{date_str}', "
+                        f"not auto-corrected"
                     )
 
             # Validate and repair timestamps

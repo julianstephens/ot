@@ -324,9 +324,9 @@ class StorageService:
                 )
             backup_path = self.__backup_svc.create_backup()
             result.backup_path = backup_path
-            return (
-                result.remedy,
-                f"""
+
+            if backup_path:
+                msg = f"""
             Corrupted state file detected.
 
             A backup of the file was saved to:
@@ -335,7 +335,21 @@ class StorageService:
             Run `ot init --force` to re-initialize the storage service.
 
             Exit code: {result.exit_code}
-            """,
+            """
+            else:
+                msg = f"""
+            Corrupted state file detected.
+
+            Could not create a backup of the corrupted file.
+
+            Run `ot init --force` to re-initialize the storage service.
+
+            Exit code: {result.exit_code}
+            """
+
+            return (
+                result.remedy,
+                msg,
                 result.exit_code,
             )
 
