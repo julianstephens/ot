@@ -1,9 +1,11 @@
 import logging
+from datetime import datetime
 from pathlib import Path
 
 import msgspec
 import pytest
 from freezegun import freeze_time
+from tzlocal import get_localzone
 
 from ot.services import DoctorService
 from ot.utils import (
@@ -98,22 +100,32 @@ def test_doctor_outdated_version(doctor_service, mock_state_path):
 
 
 def test_doctor_missing_settings(doctor_service, mock_state_path):
-    """Test doctor repairs missing settings."""
+    """Test doctor repairs missing settings.
+
+    Raises:
+        ValueError: If could not get local timezone offset.
+    """
     content = {
         "version": STATE_VERSION,
         "timezone": "UTC",
         "days": {},
     }
     create_state_file(mock_state_path, content)
-
-    with freeze_time("2025-01-01 12:00:00"):
+    freeze_at = datetime(2025, 1, 1, 12, 0, 0)
+    td = get_localzone().utcoffset(freeze_at)
+    if not td:
+        raise ValueError("Could not get local timezone offset")  # noqa: TRY003
+    with freeze_time(freeze_at.strftime("%Y-%m-%d %H:%M:%S")):
         result = doctor_service.run()
 
     assert result.exit_code == 0
     assert len(result.autofixed) > 0
     assert "Settings field was missing" in result.autofixed[0]
     assert result.backup_path is not None
-    assert result.backup_path.name == "state-20250101120000.json"
+    assert (
+        result.backup_path.name
+        == f"state-{(freeze_at + td).strftime('%Y%m%d%H%M%S')}.json"
+    )
 
     # Verify file content
     with mock_state_path.open("rb") as f:

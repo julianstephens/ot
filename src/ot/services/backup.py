@@ -1,6 +1,8 @@
 from datetime import datetime
 from pathlib import Path
 
+from tzlocal import get_localzone
+
 from ot.utils import DEFAULT_MAX_BACKUP_FILES, Logger
 
 
@@ -61,7 +63,8 @@ class BackupService:
         """
         self.__logger.debug("creating backup of state file...")
         backup_path = (
-            self.backup_dir / f"state-{datetime.now().strftime('%Y%m%d%H%M%S')}.json"
+            self.backup_dir
+            / f"state-{datetime.now(tz=get_localzone()).strftime('%Y%m%d%H%M%S')}.json"
         )
         self.backup_dir.mkdir(parents=True, exist_ok=True)
         try:
