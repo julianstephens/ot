@@ -59,5 +59,6 @@ class BackupService:
         )
         self.backup_dir.mkdir(parents=True, exist_ok=True)
         self.state_path.copy(backup_path)
+        self.cleanup_old_backups()
         self.__logger.debug(f"backup created at: {backup_path!s}")
         return backup_path

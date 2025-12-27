@@ -13,5 +13,8 @@ STATE_FILE = "one_thing.json"
 DATE_FORMAT = "%Y-%m-%d"
 MONTH_FORMAT = "%Y-%m"
 
+# Default number of days to show in logs
+DEFAULT_LOG_DAYS = 7
+
 # Default maximum number of backup files to keep
 DEFAULT_MAX_BACKUP_FILES = 5

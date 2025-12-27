@@ -4,6 +4,8 @@ import msgspec
 from tzlocal import get_localzone
 
 from ot.utils import (
+    DEFAULT_LOG_DAYS,
+    DEFAULT_MAX_BACKUP_FILES,
     STATE_VERSION,
     Day,
     DoctorResult,
@@ -144,7 +146,12 @@ class DoctorService:
                     state.settings = Settings(
                         auto_prompt_on_empty=s_data.get("auto_prompt_on_empty", True),
                         strict_mode=s_data.get("strict_mode", True),
-                        default_log_days=s_data.get("default_log_days", 7),
+                        default_log_days=s_data.get(
+                            "default_log_days", DEFAULT_LOG_DAYS
+                        ),
+                        max_backup_files=s_data.get(
+                            "max_backup_files", DEFAULT_MAX_BACKUP_FILES
+                        ),
                     )
 
                 # Handle days if present
@@ -246,7 +253,6 @@ class DoctorService:
             modified = True
         else:
             self.__logger.debug("settings field present. validating fields...")
-            pass
 
         timezone = state.timezone
         if timezone is None or timezone.strip() == "":

@@ -213,7 +213,7 @@ class StorageService:
             f.write(msgspec.json.encode(self.__state))
             self.__logger.debug("state saved to file")
 
-    def _enforce_strict_mode(
+    def enforce_strict_mode(
         self, date: str, action: Literal["add", "modify", "status"]
     ):
         """Enforce strict mode rules based on the action.
@@ -442,7 +442,7 @@ class StorageService:
         data.created_at = now
         date = now.strftime(DATE_FORMAT) if date is None else date
 
-        self._enforce_strict_mode(date, action="add")
+        self.enforce_strict_mode(date, action="add")
 
         if date in self.__state.days and not force:
             raise DayCollisionError
@@ -481,7 +481,7 @@ class StorageService:
             else date
         )
 
-        self._enforce_strict_mode(date, action="modify")
+        self.enforce_strict_mode(date, action="modify")
 
         self.__logger.debug(f"adding note to date: {date}")
         day = self.__state.days.get(date, None)
@@ -520,7 +520,7 @@ class StorageService:
             if date is None
             else date
         )
-        self._enforce_strict_mode(date, action="modify")
+        self.enforce_strict_mode(date, action="modify")
         day = self.__state.days.get(date, None)
         if day is None:
             self.__logger.debug("no day set for this date, raising error")
@@ -612,7 +612,7 @@ class StorageService:
             else date
         )
 
-        self._enforce_strict_mode(date, action="status")
+        self.enforce_strict_mode(date, action="status")
 
         self.__logger.debug(f"marking day as done for date: {date}")
         day = self.__state.days.get(date, None)

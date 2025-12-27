@@ -117,6 +117,8 @@ class DoctorResult:
         lines.append(f"Exit code: {self.exit_code}")
 
         return "\n".join(lines)
+
+
 class State(msgspec.Struct):
     timezone: str | None = None
     days: dict[str, Day] | None = None
