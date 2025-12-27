@@ -16,8 +16,8 @@ def mock_storage(mocker):
 
 
 def test_config_set_default_log_days(mock_storage, mocker):
-    mock_prompt = mocker.patch("ot.commands.config_cmd.set_cmd.Prompt.ask")
-    mock_prompt.return_value = "10"
+    mock_prompt = mocker.patch("ot.commands.config_cmd.set_cmd.IntPrompt.ask")
+    mock_prompt.return_value = 10
 
     result = runner.invoke(app, ["config", "set", "default_log_days"])
 
@@ -28,8 +28,8 @@ def test_config_set_default_log_days(mock_storage, mocker):
 
 
 def test_config_set_default_log_days_invalid(mock_storage, mocker):
-    mock_prompt = mocker.patch("ot.commands.config_cmd.set_cmd.Prompt.ask")
-    mock_prompt.return_value = "-1"
+    mock_prompt = mocker.patch("ot.commands.config_cmd.set_cmd.IntPrompt.ask")
+    mock_prompt.return_value = -1
 
     result = runner.invoke(app, ["config", "set", "default_log_days"])
 
@@ -68,8 +68,8 @@ def test_config_set_unknown_key(mock_storage):
 
 
 def test_config_set_not_initialized(mock_storage, mocker):
-    mock_prompt = mocker.patch("ot.commands.config_cmd.set_cmd.Prompt.ask")
-    mock_prompt.return_value = "10"
+    mock_prompt = mocker.patch("ot.commands.config_cmd.set_cmd.IntPrompt.ask")
+    mock_prompt.return_value = 10
     mock_storage.modify_settings.side_effect = StorageNotInitializedError
 
     result = runner.invoke(app, ["config", "set", "default_log_days"])
@@ -79,8 +79,8 @@ def test_config_set_not_initialized(mock_storage, mocker):
 
 
 def test_config_set_generic_error(mock_storage, mocker):
-    mock_prompt = mocker.patch("ot.commands.config_cmd.set_cmd.Prompt.ask")
-    mock_prompt.return_value = "10"
+    mock_prompt = mocker.patch("ot.commands.config_cmd.set_cmd.IntPrompt.ask")
+    mock_prompt.return_value = 10
     mock_storage.modify_settings.side_effect = Exception("Boom")
 
     result = runner.invoke(app, ["config", "set", "default_log_days"])
@@ -90,8 +90,8 @@ def test_config_set_generic_error(mock_storage, mocker):
 
 
 def test_config_set_max_backup_files(mock_storage, mocker):
-    mock_prompt = mocker.patch("ot.commands.config_cmd.set_cmd.Prompt.ask")
-    mock_prompt.return_value = "10"
+    mock_prompt = mocker.patch("ot.commands.config_cmd.set_cmd.IntPrompt.ask")
+    mock_prompt.return_value = 10
 
     result = runner.invoke(app, ["config", "set", "max_backup_files"])
 
@@ -102,8 +102,8 @@ def test_config_set_max_backup_files(mock_storage, mocker):
 
 
 def test_config_set_max_backup_files_invalid(mock_storage, mocker):
-    mock_prompt = mocker.patch("ot.commands.config_cmd.set_cmd.Prompt.ask")
-    mock_prompt.return_value = "-1"
+    mock_prompt = mocker.patch("ot.commands.config_cmd.set_cmd.IntPrompt.ask")
+    mock_prompt.return_value = -1
 
     result = runner.invoke(app, ["config", "set", "max_backup_files"])
 

@@ -31,6 +31,8 @@ class StrictModeRules(StrEnum):
 
 
 class Remedy(StrEnum):
+    """Remediation codes for issues detected by the Doctor service."""
+
     INIT_STORAGE = "init_storage"
     FORCE_INIT_STORAGE = "force_init_storage"
     LOAD_STATE = "load_state"
@@ -63,6 +65,8 @@ SettingsKeys = StrEnum(
 
 @dataclass
 class DoctorResult:
+    """Result of running the Doctor service."""
+
     exit_code: int = 0
     autofixed: list[str] = field(default_factory=list)
     unresolved: list[str] = field(default_factory=list)
@@ -74,6 +78,11 @@ class DoctorResult:
         return bool(self.autofixed or self.unresolved)
 
     def generate_report(self) -> str:
+        """Generate a textual report of the Doctor run.
+
+        Returns:
+            str: The report as a string.
+        """
         lines: list[str] = []
 
         # Header

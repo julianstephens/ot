@@ -5,7 +5,7 @@ import msgspec
 import pytest
 from freezegun import freeze_time
 
-from ot.services.doctor import DoctorService
+from ot.services import DoctorService
 from ot.utils import (
     STATE_VERSION,
     Remedy,

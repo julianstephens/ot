@@ -1,7 +1,7 @@
 from typing import Annotated
 
 import typer
-from rich.prompt import Confirm, Prompt
+from rich.prompt import Confirm, IntPrompt, Prompt
 
 from ot.services import StorageService
 from ot.utils import (
@@ -17,13 +17,12 @@ from . import app
 
 def set_default_log_days(storage: StorageService) -> None:
     settings = storage.settings
-    default_days = Prompt.ask(
-        "Enter default number of days to show in log", default="7"
+    default_days = IntPrompt.ask(
+        "Enter default number of days to show in log", default=7
     )
-    days_int = int(default_days)
-    if days_int <= 0:
+    if default_days <= 0:
         raise ValueError
-    settings.default_log_days = days_int
+    settings.default_log_days = default_days
     storage.modify_settings(settings)
 
 
@@ -43,11 +42,10 @@ def set_strict_mode(storage: StorageService) -> None:
 
 def set_max_backup_files(storage: StorageService) -> None:
     settings = storage.settings
-    max_files = Prompt.ask("Enter maximum number of backup files to keep", default="5")
-    files_int = int(max_files)
-    if files_int < 0:
+    max_files = IntPrompt.ask("Enter maximum number of backup files to keep", default=5)
+    if max_files < 0:
         raise ValueError
-    settings.max_backup_files = files_int
+    settings.max_backup_files = max_files
     storage.modify_settings(settings)
 
 

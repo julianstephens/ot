@@ -4,11 +4,13 @@ import msgspec
 from tzlocal import get_localzone
 
 from ot.utils import (
+    DATE_FORMAT,
     DEFAULT_LOG_DAYS,
     DEFAULT_MAX_BACKUP_FILES,
     STATE_VERSION,
     Day,
     DoctorResult,
+    InvalidDateStringError,
     Logger,
     Remedy,
     Settings,
@@ -98,16 +100,21 @@ class DoctorService:
             result.exit_code = 3
             result.remedy = Remedy.INIT_STORAGE
             return False
-        if (
-            self.state_path.stat().st_size == 0
-            or self.state_path.read_text().strip() == ""
-        ):
+        if self.state_path.stat().st_size == 0:
             self.__logger.debug("state file is empty")
             result.exit_code = 1
             result.remedy = Remedy.LOAD_STATE
             return False
 
-        return True
+        with self.state_path.open("r", encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    return True
+
+        self.__logger.debug("state file is empty")
+        result.exit_code = 1
+        result.remedy = Remedy.LOAD_STATE
+        return False
 
     def _load_and_validate_structure(self, result: DoctorResult) -> State | None:
         """Load and validate the structure of the state file.
@@ -269,6 +276,14 @@ class DoctorService:
         return modified
 
     def _repair_days(self, state: State, result: DoctorResult) -> bool:
+        def _validate_date_or_raise(date_str: str) -> str:
+            validated_date = validate_date_string(date_str)
+            if validated_date is None:
+                raise InvalidDateStringError(
+                    date_string=date_str, format_code=DATE_FORMAT
+                )
+            return validated_date
+
         modified = False
 
         if state.days is None:
@@ -276,9 +291,7 @@ class DoctorService:
 
         for date_str, day in list(state.days.items()):
             try:
-                validated_date = validate_date_string(date_str)
-                if validated_date is None:
-                    raise
+                _validate_date_or_raise(date_str)
             except Exception as ex:
                 self.__logger.debug(
                     f"invalid date string '{date_str}' in days, removing entry"
