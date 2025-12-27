@@ -1,6 +1,6 @@
 [project]
 name = "ot"
-version = "0.1.0"
+version = "0.1.1"
 requires-python = ">=3.12"
 dependencies = [
     "msgspec>=0.20.0",
@@ -19,10 +19,24 @@ build-backend = "setuptools.build_meta"
 line-length = 88
 
 [tool.ruff.lint]
-extend-select = ["RUF", "LOG", "TRY"]
+preview = true
+extend-select = ["RUF", "LOG", "TRY", "I", "W", "DOC", "F", "E"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+"tests/*" = ["E402"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
+    "pytest-mock>=3.14.0",
+    "pytest-xdist>=3.8.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+addopts = "--cov=ot --cov-report=term-missing --cov-fail-under=70 -n 3"

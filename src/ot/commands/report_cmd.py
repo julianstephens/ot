@@ -3,17 +3,28 @@ from typing import Annotated
 from zoneinfo import ZoneInfo
 
 import typer
+from rich import print
 
 from ot.cli import app
-from ot.services import Status, get_storage
-from ot.utils import MONTH_FORMAT, StorageNotInitializedError, print_error
+from ot.services import Status, StorageService
+from ot.utils import (
+    MONTH_FORMAT,
+    RichHelpPanel,
+    StorageNotInitializedError,
+    print_error,
+)
 
 
-@app.command("report", help="Generate a report of commitments")
+@app.command(
+    "report",
+    help="Generate a report of commitments",
+    rich_help_panel=RichHelpPanel.REPORTING.value,
+)
 def report(
+    ctx: typer.Context,
     month: Annotated[str | None, typer.Option(help="Month in YYYY-MM format")] = None,
 ) -> None:
-    storage = get_storage()
+    storage: StorageService = ctx.obj.storage
 
     month = (
         month

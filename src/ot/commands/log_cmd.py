@@ -6,14 +6,21 @@ import typer
 from rich import print
 
 from ot.cli import app
-from ot.services import get_storage
-from ot.utils import DATE_FORMAT, DEFAULT_LOG_DISPLAY_DAYS, validate_month_string
-from ot.utils.cli import print_error
-from ot.utils.errors import StorageNotInitializedError
+from ot.services import StorageService
+from ot.utils import (
+    DATE_FORMAT,
+    RichHelpPanel,
+    StorageNotInitializedError,
+    print_error,
+    validate_month_string,
+)
 
 
-@app.command("log", help="Display commitment log")
+@app.command(
+    "log", help="Display commitment log", rich_help_panel=RichHelpPanel.REPORTING.value
+)
 def log(
+    ctx: typer.Context,
     days: Annotated[
         int | None, typer.Option("--days", "-d", help="Number of days to display")
     ] = None,
@@ -24,7 +31,7 @@ def log(
         ),
     ] = None,
 ) -> None:
-    storage = get_storage()
+    storage: StorageService = ctx.obj.storage
 
     all_days = storage.days
 
@@ -42,7 +49,7 @@ def log(
             print(f"{date}  {day.status.value}  {day.title}")
         return
 
-    display_days = days if days is not None else DEFAULT_LOG_DISPLAY_DAYS
+    display_days = days if days is not None else storage.settings.default_log_days
     today = datetime.now(tz=ZoneInfo(storage.tz)).strftime(DATE_FORMAT)
 
     for i in range(display_days):
@@ -50,6 +57,6 @@ def log(
             DATE_FORMAT
         )
         data = all_days.get(date, None)
-        print(
-            f"{date}  {data.status.value if data is not None else '-'}  {data.title if data is not None else '(no commitment)'}"
-        )
+        status = data.status.value if data is not None else "-"
+        title = data.title if data is not None else "(no commitment)"
+        print(f"{date}  {status}  {title}")

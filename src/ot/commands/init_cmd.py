@@ -3,7 +3,7 @@ from typing import Annotated
 import typer
 
 from ot.cli import app
-from ot.services import get_storage
+from ot.services import StorageService
 from ot.utils import (
     StorageAlreadyInitializedError,
     print_error,
@@ -25,7 +25,7 @@ def init(
         )
 
     ctx.obj.logger.debug("getting storage service...")
-    storage = get_storage()
+    storage: StorageService = ctx.obj.storage
     ctx.obj.logger.debug("storage service obtained.")
 
     try:

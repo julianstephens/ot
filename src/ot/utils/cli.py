@@ -1,12 +1,18 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
+from zoneinfo import ZoneInfo
 
 import typer
 from rich import print
 from rich.panel import Panel
-
-from ot.utils.errors import InvalidDateStringError
+from rich.prompt import Prompt
 
 from .constants import DATE_FORMAT, MONTH_FORMAT
+from .errors import InvalidDateStringError
+from .models import Day
+
+if TYPE_CHECKING:
+    from ot.services.storage import StorageService
 
 
 def print_info(message: str, with_icon=True) -> None:
@@ -44,6 +50,9 @@ def validate_date_string(date: str | None) -> str | None:
 
     Raises:
         typer.BadParameter: If the date string is not valid.
+
+    Returns
+        str | None: The validated date string or None.
     """
 
     if date is None:
@@ -64,6 +73,9 @@ def validate_month_string(month: str | None) -> str | None:
 
     Raises:
         typer.BadParameter: If the month string is not valid.
+
+    Returns:
+        str | None: The validated month string or None.
     """
 
     if month is None:
@@ -74,3 +86,28 @@ def validate_month_string(month: str | None) -> str | None:
         raise typer.BadParameter(str(ex)) from ex
     else:
         return validated_date.strftime(MONTH_FORMAT)
+
+
+def prompt_set_commitment(storage: "StorageService") -> Day | None:
+    """Prompt the user to set a commitment for the day.
+
+    Returns:
+        Day: The commitment day data entered by the user.
+    """
+    curr_date = datetime.now(tz=ZoneInfo(storage.tz)).strftime(DATE_FORMAT)
+    do_set = Prompt.ask(
+        "No commitment set for today. Set one now?",
+        choices=["y", "n"],
+        default="y",
+        case_sensitive=False,
+    )
+
+    if do_set == "y":
+        title = Prompt.ask("Enter the title for today's commitment")
+        return storage.add_day(
+            Day(
+                title=title,
+            ),
+            curr_date,
+        )
+    return None

@@ -1,3 +1,6 @@
+from ot.utils.models import StrictModeRules
+
+
 class StorageNotInitializedError(RuntimeError):
     """Raised when the storage service has not been initialized yet."""
 
@@ -8,6 +11,16 @@ class StorageAlreadyInitializedError(SystemError):
     """Raised when attempting to initialize storage that is already initialized."""
 
     pass
+
+
+class StrictModeViolationError(RuntimeError):
+    """Raised when an operation violates strict mode settings."""
+
+    def __init__(self, rule: StrictModeRules) -> None:
+        super().__init__(
+            f"The operation could not be completed in strict mode. "
+            f"Rule in violation: {rule.value}"
+        )
 
 
 class DayUnsetError(ValueError):
