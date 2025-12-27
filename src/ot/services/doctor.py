@@ -309,10 +309,10 @@ class DoctorService:
                 except ValueError:
                     self.__logger.debug(
                         f"invalid status '{day.status}' for date '{date_str}', "
-                        f"setting to UNSET"
+                        f"leaving unchanged and marking as unresolved"
                     )
                     result.unresolved.append(
-                        f"Invalid status '{day.status}' for date '{date_str}'"
+                        f"Invalid status '{day.status}' for date '{date_str}', not auto-corrected"
                     )
 
             # Validate and repair timestamps
