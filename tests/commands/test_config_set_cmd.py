@@ -87,3 +87,28 @@ def test_config_set_generic_error(mock_storage, mocker):
 
     assert result.exit_code == 1
     assert "Error setting default_log_days: Boom" in result.stdout
+
+
+def test_config_set_max_backup_files(mock_storage, mocker):
+    mock_prompt = mocker.patch("ot.commands.config_cmd.set_cmd.Prompt.ask")
+    mock_prompt.return_value = "10"
+
+    result = runner.invoke(app, ["config", "set", "max_backup_files"])
+
+    assert result.exit_code == 0
+    assert "Configuration 'max_backup_files' updated successfully." in result.stdout
+    assert mock_storage.settings.max_backup_files == 10
+    mock_storage.modify_settings.assert_called_once()
+
+
+def test_config_set_max_backup_files_invalid(mock_storage, mocker):
+    mock_prompt = mocker.patch("ot.commands.config_cmd.set_cmd.Prompt.ask")
+    mock_prompt.return_value = "-1"
+
+    result = runner.invoke(app, ["config", "set", "max_backup_files"])
+
+    assert result.exit_code == 1
+    assert (
+        "Please enter a valid non-negative integer for maximum backup files."
+        in result.stdout
+    )

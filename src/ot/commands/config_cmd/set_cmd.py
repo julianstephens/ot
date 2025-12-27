@@ -41,6 +41,16 @@ def set_strict_mode(storage: StorageService) -> None:
     storage.modify_settings(settings)
 
 
+def set_max_backup_files(storage: StorageService) -> None:
+    settings = storage.settings
+    max_files = Prompt.ask("Enter maximum number of backup files to keep", default="5")
+    files_int = int(max_files)
+    if files_int < 0:
+        raise ValueError
+    settings.max_backup_files = files_int
+    storage.modify_settings(settings)
+
+
 @app.command("set", help="Set configuration options for the ot CLI")
 def set(
     ctx: typer.Context,
@@ -81,6 +91,21 @@ def set(
                 raise typer.Exit(code=1) from ex
             except Exception as ex:
                 print_error(f"Error setting strict_mode: {ex}")
+                raise typer.Exit(code=1) from ex
+        case "max_backup_files":
+            try:
+                set_max_backup_files(storage)
+            except ValueError:
+                print_error(
+                    "Please enter a valid non-negative integer for maximum "
+                    "backup files."
+                )
+                raise typer.Exit(code=1)
+            except StorageNotInitializedError as ex:
+                print_error("Storage is not initialized. Please run 'ot init' first.")
+                raise typer.Exit(code=1) from ex
+            except Exception as ex:
+                print_error(f"Error setting max_backup_files: {ex}")
                 raise typer.Exit(code=1) from ex
         case _:
             print_error(f"Setting '{key}' is not recognized.")

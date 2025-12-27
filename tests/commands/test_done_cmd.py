@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock
-
 import pytest
 from typer.testing import CliRunner
 
@@ -17,8 +15,8 @@ def mock_storage(mocker):
     return mock_service
 
 
-def test_done_success(mock_storage):
-    mock_day = MagicMock()
+def test_done_success(mock_storage, mocker):
+    mock_day = mocker.MagicMock()
     mock_day.title = "Test Commitment"
     mock_storage.complete_day.return_value = ("2023-01-01", mock_day)
 
@@ -29,8 +27,8 @@ def test_done_success(mock_storage):
     mock_storage.complete_day.assert_called_once_with(None)
 
 
-def test_done_with_date(mock_storage):
-    mock_day = MagicMock()
+def test_done_with_date(mock_storage, mocker):
+    mock_day = mocker.MagicMock()
     mock_day.title = "Test Commitment"
     mock_storage.complete_day.return_value = ("2023-01-01", mock_day)
 

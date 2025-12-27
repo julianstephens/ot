@@ -30,29 +30,13 @@ def test_config_view_success(mock_storage):
     assert "Strict Mode           : False" in result.stdout
 
 
-def test_config_view_error(mock_storage):
-    # Mock property access raising exception
-    # Since settings is a property on mock_storage, we can make it raise
-    type(mock_storage).settings = PropertyMock(side_effect=Exception("Boom"))
-
-    # Wait, PropertyMock needs to be imported
-    pass
-
-
-# I need to import PropertyMock or just configure the mock to raise on attribute
-# access if possible.
-# Or just mock the property.
-
-from unittest.mock import PropertyMock
-
-
-def test_config_view_error_impl(mock_storage):
+def test_config_view_error(mock_storage, mocker):
     # We need to re-setup mock_storage or just use the one passed
     # But we need to patch the property.
     # mock_storage.settings is a Mock object by default (or configured in fixture).
     # To make accessing .settings raise, we can use PropertyMock.
 
-    p = PropertyMock(side_effect=Exception("Boom"))
+    p = mocker.PropertyMock(side_effect=Exception("Boom"))
     type(mock_storage).settings = p
 
     result = runner.invoke(app, ["config", "view"])

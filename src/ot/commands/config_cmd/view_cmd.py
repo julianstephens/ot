@@ -20,3 +20,4 @@ def view(ctx: typer.Context) -> None:
     print(f"  Default Log Days      : {settings.default_log_days}")
     print(f"  Auto Prompt on Empty  : {settings.auto_prompt_on_empty}")
     print(f"  Strict Mode           : {settings.strict_mode}")
+    print(f"  Max Backup Files      : {settings.max_backup_files}")

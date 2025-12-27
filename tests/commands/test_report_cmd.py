@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock
-
 import pytest
 from typer.testing import CliRunner
 
@@ -18,20 +16,20 @@ def mock_storage(mocker):
     return mock_service
 
 
-def test_report_success(mock_storage):
-    mock_day_done = MagicMock()
+def test_report_success(mock_storage, mocker):
+    mock_day_done = mocker.MagicMock()
     mock_day_done.status = Status.DONE
     mock_day_done.title = "Done Task"
 
-    mock_day_skipped = MagicMock()
+    mock_day_skipped = mocker.MagicMock()
     mock_day_skipped.status = Status.SKIPPED
     mock_day_skipped.title = "Skipped Task"
 
-    mock_day_pending = MagicMock()
+    mock_day_pending = mocker.MagicMock()
     mock_day_pending.status = Status.PENDING
     mock_day_pending.title = "Pending Task"
 
-    mock_day_empty = MagicMock()
+    mock_day_empty = mocker.MagicMock()
     mock_day_empty.title = "(no commitment)"
 
     mock_storage.get_month_days.return_value = {

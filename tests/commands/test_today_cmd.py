@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock, patch
-
 import pytest
 from typer.testing import CliRunner
 
@@ -18,8 +16,8 @@ def mock_storage(mocker):
     return mock_service
 
 
-def test_today_success(mock_storage):
-    mock_day = MagicMock()
+def test_today_success(mock_storage, mocker):
+    mock_day = mocker.MagicMock()
     mock_day.status = Status.PENDING
     mock_day.title = "Test Commitment"
     mock_day.note = "Test Note"
@@ -33,8 +31,8 @@ def test_today_success(mock_storage):
     assert "Test Note" in result.stdout
 
 
-def test_today_with_date(mock_storage):
-    mock_day = MagicMock()
+def test_today_with_date(mock_storage, mocker):
+    mock_day = mocker.MagicMock()
     mock_day.status = Status.PENDING
     mock_day.title = "Test Commitment"
     mock_day.note = None
@@ -83,7 +81,7 @@ def test_today_empty_prompt_success(mock_storage, mocker):
     mock_storage.get_day.return_value = ("2023-01-01", None)
     mock_storage.settings.auto_prompt_on_empty = True
 
-    mock_day = MagicMock()
+    mock_day = mocker.MagicMock()
     mock_day.status = Status.PENDING
     mock_day.title = "New Commitment"
     mock_day.note = None
@@ -93,16 +91,16 @@ def test_today_empty_prompt_success(mock_storage, mocker):
 
     mock_print = mocker.patch("ot.commands.today_cmd.print")
 
-    with patch("ot.commands.today_cmd.datetime") as mock_datetime:
-        mock_datetime.now.return_value.strftime.return_value = "2023-01-01"
+    mock_datetime = mocker.patch("ot.commands.today_cmd.datetime")
+    mock_datetime.now.return_value.strftime.return_value = "2023-01-01"
 
-        result = runner.invoke(app, ["today"])
+    result = runner.invoke(app, ["today"])
 
-        assert result.exit_code == 0
-        # Verify calls to print
-        # It prints date - status, then title
-        mock_print.assert_any_call("2023-01-01 - pending")
-        mock_print.assert_any_call("  New Commitment")
+    assert result.exit_code == 0
+    # Verify calls to print
+    # It prints date - status, then title
+    mock_print.assert_any_call("2023-01-01 - pending")
+    mock_print.assert_any_call("  New Commitment")
 
 
 def test_today_empty_prompt_none(mock_storage, mocker):
@@ -114,13 +112,13 @@ def test_today_empty_prompt_none(mock_storage, mocker):
 
     mock_print = mocker.patch("ot.commands.today_cmd.print")
 
-    with patch("ot.commands.today_cmd.datetime") as mock_datetime:
-        mock_datetime.now.return_value.strftime.return_value = "2023-01-01"
+    mock_datetime = mocker.patch("ot.commands.today_cmd.datetime")
+    mock_datetime.now.return_value.strftime.return_value = "2023-01-01"
 
-        result = runner.invoke(app, ["today"])
+    result = runner.invoke(app, ["today"])
 
-        assert result.exit_code == 0
-        mock_print.assert_called_with("2023-01-01 - no commitment set")
+    assert result.exit_code == 0
+    mock_print.assert_called_with("2023-01-01 - no commitment set")
 
 
 def test_today_empty_not_today(mock_storage, mocker):
@@ -128,13 +126,13 @@ def test_today_empty_not_today(mock_storage, mocker):
 
     mock_print = mocker.patch("ot.commands.today_cmd.print")
 
-    with patch("ot.commands.today_cmd.datetime") as mock_datetime:
-        mock_datetime.now.return_value.strftime.return_value = "2023-01-02"
+    mock_datetime = mocker.patch("ot.commands.today_cmd.datetime")
+    mock_datetime.now.return_value.strftime.return_value = "2023-01-02"
 
-        result = runner.invoke(app, ["today"])
+    result = runner.invoke(app, ["today"])
 
-        assert result.exit_code == 0
-        mock_print.assert_called_with("2023-01-01 - no commitment set")
+    assert result.exit_code == 0
+    mock_print.assert_called_with("2023-01-01 - no commitment set")
 
 
 def test_today_generic_error(mock_storage):
