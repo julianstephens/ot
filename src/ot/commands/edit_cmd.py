@@ -18,7 +18,7 @@ def edit(
     ctx: typer.Context,
     title: Annotated[str, typer.Argument(help="New title for the commitment")],
     date: Annotated[
-        str | None, typer.Option(help="Date of the commitment to edit")
+        str | None, typer.Option("--date", "-d", help="Date of the commitment to edit")
     ] = None,
 ):
     storage: StorageService = ctx.obj.storage

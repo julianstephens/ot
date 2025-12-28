@@ -28,6 +28,8 @@ def note(
     date: Annotated[
         str | None,
         typer.Option(
+            "--date",
+            "-d",
             help="A specific date in YYYY-MM-DD format to add a note to",
             callback=validate_date_string,
         ),

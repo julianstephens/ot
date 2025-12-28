@@ -29,7 +29,10 @@ def done(
     date: Annotated[
         str | None,
         typer.Option(
-            help="Specify a date in YYYY-MM-DD format", callback=validate_date_string
+            "--date",
+            "-d",
+            help="Specify a date in YYYY-MM-DD format",
+            callback=validate_date_string,
         ),
     ] = None,
 ):
