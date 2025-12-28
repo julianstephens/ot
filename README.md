@@ -81,6 +81,10 @@ Strict mode enforces one decision per day with limited editing
 
 Binary name: `ot`
 
+### Global Flags
+
+- `--debug`: Enable debug logging.
+
 ### `ot init`
 
 **Purpose:** create the data file + directory.
@@ -109,6 +113,8 @@ ot init --force  # overwrites file
 
 **Purpose:** show today’s commitment and status.
 
+**Alias:** `t`
+
 **Behavior:**
 
 - Get today’s date in local timezone.
@@ -121,16 +127,17 @@ ot init --force  # overwrites file
   ```
 
 - If none:
+  - Prompt to set one (if `auto_prompt_on_empty` is enabled).
+  - Else print:
+    ```
+    2025-12-26 — no commitment set
+    ```
 
-  ```
-  2025-12-26 — no commitment set
-  ```
-
-Support `--date YYYY-MM-DD` to inspect any date:
+Support `--date YYYY-MM-DD` (or `-d`) to inspect any date:
 
 ```bash
 ot today          # shows today
-ot today --date 2025-12-24
+ot today -d 2025-12-24
 ```
 
 ---
@@ -138,6 +145,8 @@ ot today --date 2025-12-24
 ### `ot nudge`
 
 **Purpose:** remind you of today's commitment.
+
+**Alias:** `r`
 
 **Behavior:**
 
@@ -159,11 +168,13 @@ ot nudge
 
 **Purpose:** set the one thing for today (or a specified date).
 
+**Alias:** `s`
+
 **Behavior:**
 
 - Compute target date:
   - Default: today.
-  - Or `--date YYYY-MM-DD`.
+  - Or `--date YYYY-MM-DD` (or `-d`).
 
 - If date already has a commitment and `--force` not given:
   - Print error and show existing commitment.
@@ -176,7 +187,7 @@ Examples:
 
 ```bash
 ot set "Call mom"
-ot set --date 2025-12-28 "Finish draft of section 3"
+ot set -d 2025-12-28 "Finish draft of section 3"
 ot set --force "Replace today's commitment with something else"
 ```
 
@@ -186,11 +197,13 @@ ot set --force "Replace today's commitment with something else"
 
 **Purpose:** edit the title of an existing commitment.
 
+**Alias:** `e`
+
 **Behavior:**
 
 - Target date:
   - Default: today.
-  - Or `--date YYYY-MM-DD`.
+  - Or `--date YYYY-MM-DD` (or `-d`).
 
 - Updates the commitment title to the new text.
 
@@ -198,7 +211,7 @@ Examples:
 
 ```bash
 ot edit "Call dad instead"
-ot edit --date 2025-12-28 "Finish draft of section 4"
+ot edit -d 2025-12-28 "Finish draft of section 4"
 ```
 
 ---
@@ -207,11 +220,13 @@ ot edit --date 2025-12-28 "Finish draft of section 4"
 
 **Purpose:** set a brief note for today (or a specified date).
 
+**Alias:** `n`
+
 **Behavior:**
 
 - Compute target date:
   - Default: today.
-  - Or `--date YYYY-MM-DD`.
+  - Or `--date YYYY-MM-DD` (or `-d`).
 
 - If no commitment:
   - Prompt if `settings.auto_prompt_on_empty` else print error
@@ -222,7 +237,7 @@ Examples:
 
 ```bash
 ot note
-ot note --date 2025-12-25
+ot note -d 2025-12-25
 ```
 
 ---
@@ -231,9 +246,11 @@ ot note --date 2025-12-25
 
 **Purpose:** mark today’s commitment as completed.
 
+**Alias:** `d`
+
 **Behavior:**
 
-- Target date = today, unless `--date` given.
+- Target date = today, unless `--date` (or `-d`) given.
 - If no commitment exists:
   - Print: `No commitment set for 2025-12-26.`
 
@@ -248,7 +265,7 @@ Examples:
 
 ```bash
 ot done
-ot done --date 2025-12-25
+ot done -d 2025-12-25
 ```
 
 ---
@@ -257,13 +274,15 @@ ot done --date 2025-12-25
 
 **Purpose:** explicitly mark today’s commitment as not done.
 
+**Alias:** `k`
+
 **Behavior:**
 
 Very similar to `done`, but sets `status` = `skipped`, `skipped_at` timestamp optional.
 
 ```bash
 ot skip
-ot skip --date 2025-12-24
+ot skip -d 2025-12-24
 ```
 
 ---
@@ -275,7 +294,7 @@ ot skip --date 2025-12-24
 **Behavior:**
 
 - Show last N days (default 7), with status and title.
-- Or a month view if `--month` provided (`YYYY-MM`).
+- Or a month view if `--month` (or `-m`) provided (`YYYY-MM`).
 
 Output (recent 7):
 
@@ -292,7 +311,7 @@ Examples:
 ```bash
 ot log
 ot log --days 14
-ot log --month 2025-12
+ot log -m 2025-12
 ```
 
 If using `--month`, you can show days in calendar order.
@@ -377,4 +396,22 @@ Example usage:
 ```bash
 ot config set prompt_on_empty
 ot config set strict_mode
+```
+
+---
+
+### `ot doctor`
+
+**Purpose:** check and repair the storage state
+
+**Behavior:**
+
+- Validates the storage file structure and content
+- Attempts to repair common issues
+- Reports success or failure
+
+Example usage:
+
+```bash
+ot doctor
 ```

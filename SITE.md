@@ -25,12 +25,18 @@ Single JSON file, e.g.:
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "timezone": "America/New_York",
+  "settings": {
+    "prompt_on_empty": true,
+    "strict_mode": false,
+    "default_log_days": 7
+  },
   "days": {
     "2025-12-26": {
       "title": "Call mom",
       "status": "pending",
+      "note": null,
       "created_at": "2025-12-26T10:12:04-05:00",
       "completed_at": null,
       "skipped_at": null
@@ -38,6 +44,7 @@ Single JSON file, e.g.:
     "2025-12-25": {
       "title": "Finish seminar prep",
       "status": "done",
+      "note": "Wrapped up around 8pm, felt good",
       "created_at": "2025-12-25T09:15:00-05:00",
       "completed_at": "2025-12-25T20:30:00-05:00",
       "skipped_at": null
@@ -48,9 +55,35 @@ Single JSON file, e.g.:
 
 ---
 
+## CLI Configuration
+
+### Auto Prompt on Empty
+
+Prompts user to set a commitment when they attemp to act on an unset day
+
+### Default Log Days
+
+The number of days displayed when inspecting commitment logs
+
+### Strict Mode
+
+Strict mode enforces one decision per day with limited editing
+
+**Behavior:**
+
+- Prevents setting more than one future day ahead
+- Disallows editing after marking done/skipped
+- Refuses multiple status flips per day
+
+---
+
 ## CLI interface
 
 Binary name: `ot`
+
+### Global Flags
+
+- `--debug`: Enable debug logging.
 
 ### `ot init`
 
@@ -80,6 +113,8 @@ ot init --force  # overwrites file
 
 **Purpose:** show today’s commitment and status.
 
+**Alias:** `t`
+
 **Behavior:**
 
 - Get today’s date in local timezone.
@@ -92,16 +127,39 @@ ot init --force  # overwrites file
   ```
 
 - If none:
+  - Prompt to set one (if `auto_prompt_on_empty` is enabled).
+  - Else print:
+    ```
+    2025-12-26 — no commitment set
+    ```
 
-  ```
-  2025-12-26 — no commitment set
-  ```
-
-Support `--date YYYY-MM-DD` to inspect any date:
+Support `--date YYYY-MM-DD` (or `-d`) to inspect any date:
 
 ```bash
 ot today          # shows today
-ot today --date 2025-12-24
+ot today -d 2025-12-24
+```
+
+---
+
+### `ot nudge`
+
+**Purpose:** remind you of today's commitment.
+
+**Alias:** `r`
+
+**Behavior:**
+
+- If commitment exists and is pending:
+  - Print: `Pending today: '<title>'`
+
+- If no commitment:
+  - Prompt to set one (if `auto_prompt_on_empty` is enabled).
+
+Examples:
+
+```bash
+ot nudge
 ```
 
 ---
@@ -110,11 +168,13 @@ ot today --date 2025-12-24
 
 **Purpose:** set the one thing for today (or a specified date).
 
+**Alias:** `s`
+
 **Behavior:**
 
 - Compute target date:
   - Default: today.
-  - Or `--date YYYY-MM-DD`.
+  - Or `--date YYYY-MM-DD` (or `-d`).
 
 - If date already has a commitment and `--force` not given:
   - Print error and show existing commitment.
@@ -127,8 +187,57 @@ Examples:
 
 ```bash
 ot set "Call mom"
-ot set --date 2025-12-28 "Finish draft of section 3"
+ot set -d 2025-12-28 "Finish draft of section 3"
 ot set --force "Replace today's commitment with something else"
+```
+
+---
+
+### `ot edit "new title"`
+
+**Purpose:** edit the title of an existing commitment.
+
+**Alias:** `e`
+
+**Behavior:**
+
+- Target date:
+  - Default: today.
+  - Or `--date YYYY-MM-DD` (or `-d`).
+
+- Updates the commitment title to the new text.
+
+Examples:
+
+```bash
+ot edit "Call dad instead"
+ot edit -d 2025-12-28 "Finish draft of section 4"
+```
+
+---
+
+### `ot note`
+
+**Purpose:** set a brief note for today (or a specified date).
+
+**Alias:** `n`
+
+**Behavior:**
+
+- Compute target date:
+  - Default: today.
+  - Or `--date YYYY-MM-DD` (or `-d`).
+
+- If no commitment:
+  - Prompt if `settings.auto_prompt_on_empty` else print error
+
+- Replace `note` with provided `message`
+
+Examples:
+
+```bash
+ot note
+ot note -d 2025-12-25
 ```
 
 ---
@@ -137,9 +246,11 @@ ot set --force "Replace today's commitment with something else"
 
 **Purpose:** mark today’s commitment as completed.
 
+**Alias:** `d`
+
 **Behavior:**
 
-- Target date = today, unless `--date` given.
+- Target date = today, unless `--date` (or `-d`) given.
 - If no commitment exists:
   - Print: `No commitment set for 2025-12-26.`
 
@@ -154,7 +265,7 @@ Examples:
 
 ```bash
 ot done
-ot done --date 2025-12-25
+ot done -d 2025-12-25
 ```
 
 ---
@@ -163,13 +274,15 @@ ot done --date 2025-12-25
 
 **Purpose:** explicitly mark today’s commitment as not done.
 
+**Alias:** `k`
+
 **Behavior:**
 
 Very similar to `done`, but sets `status` = `skipped`, `skipped_at` timestamp optional.
 
 ```bash
 ot skip
-ot skip --date 2025-12-24
+ot skip -d 2025-12-24
 ```
 
 ---
@@ -181,7 +294,7 @@ ot skip --date 2025-12-24
 **Behavior:**
 
 - Show last N days (default 7), with status and title.
-- Or a month view if `--month` provided (`YYYY-MM`).
+- Or a month view if `--month` (or `-m`) provided (`YYYY-MM`).
 
 Output (recent 7):
 
@@ -198,7 +311,7 @@ Examples:
 ```bash
 ot log
 ot log --days 14
-ot log --month 2025-12
+ot log -m 2025-12
 ```
 
 If using `--month`, you can show days in calendar order.
@@ -239,4 +352,66 @@ Example usage:
 ```bash
 ot report
 ot report --month 2026-01
+```
+
+---
+
+### `ot config view`
+
+**Purpose:** view the current CLI configuration settings values
+
+**Behavior:**
+
+- Display all stored settings and current values
+
+Example output:
+
+```text
+Current Configuration Settings:
+  Default Log Days :    7
+  Prompt on Empty  :    True
+  Strict Mode      :    False
+
+```
+
+Example usage:
+
+```bash
+ot config view
+```
+
+---
+
+### `ot config set "key"`
+
+**Purpose:** update CLI configuration settings
+
+**Behavior:**
+
+- Prompt user for new setting value
+- Update and save storage state
+
+Example usage:
+
+```bash
+ot config set prompt_on_empty
+ot config set strict_mode
+```
+
+---
+
+### `ot doctor`
+
+**Purpose:** check and repair the storage state
+
+**Behavior:**
+
+- Validates the storage file structure and content
+- Attempts to repair common issues
+- Reports success or failure
+
+Example usage:
+
+```bash
+ot doctor
 ```
