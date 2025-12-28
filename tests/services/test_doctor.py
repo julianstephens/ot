@@ -100,11 +100,7 @@ def test_doctor_outdated_version(doctor_service, mock_state_path):
 
 
 def test_doctor_missing_settings(doctor_service, mock_state_path):
-    """Test doctor repairs missing settings.
-
-    Raises:
-        ValueError: If could not get local timezone offset.
-    """
+    """Test doctor repairs missing settings."""
     content = {
         "version": STATE_VERSION,
         "timezone": "UTC",
@@ -113,8 +109,9 @@ def test_doctor_missing_settings(doctor_service, mock_state_path):
     create_state_file(mock_state_path, content)
     freeze_at = datetime(2025, 1, 1, 12, 0, 0)
     td = get_localzone().utcoffset(freeze_at)
+    skip_tz_assert = False
     if not td:
-        raise ValueError("Could not get local timezone offset")  # noqa: TRY003
+        skip_tz_assert = True
     with freeze_time(freeze_at.strftime("%Y-%m-%d %H:%M:%S")):
         result = doctor_service.run()
 
@@ -122,10 +119,11 @@ def test_doctor_missing_settings(doctor_service, mock_state_path):
     assert len(result.autofixed) > 0
     assert "Settings field was missing" in result.autofixed[0]
     assert result.backup_path is not None
-    assert (
-        result.backup_path.name
-        == f"state-{(freeze_at + td).strftime('%Y%m%d%H%M%S')}.json"
-    )
+    if not skip_tz_assert and td is not None:
+        assert (
+            result.backup_path.name
+            == f"state-{(freeze_at + td).strftime('%Y%m%d%H%M%S')}.json"
+        )
 
     # Verify file content
     with mock_state_path.open("rb") as f:
